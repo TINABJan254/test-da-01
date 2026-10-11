@@ -1,28 +1,26 @@
 package com.datn.robotbackend.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * Các lệnh điều khiển robot – phải khớp với switch-case trong robot_hut_bui (ESP32).
- * MQTT payload ví dụ: {"command":"FORWARD"}
+ * Trạng thái robot nhận từ MQTT topic robot/status.
+ * Robot publish JSON: {"mode":"MANUAL","state":"STOPPED","manualCmd":"FORWARD",
+ *                      "distLeft":30.5,"distCenter":50.0,"distRight":28.1,"cliff":false,"timestamp":12345}
  */
-public enum RobotCommand {
-    FORWARD,    // Tiến
-    BACKWARD,   // Lùi
-    LEFT,       // Quay trái
-    RIGHT,      // Quay phải
-    STOP,       // Dừng
-    AUTO,       // Chế độ tự động
-    ;
-
-    @JsonValue
-    public String toJson() {
-        return this.name();
-    }
-
-    @JsonCreator
-    public static RobotCommand fromJson(String value) {
-        return RobotCommand.valueOf(value.toUpperCase());
-    }
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class RobotStatus {
+    private String mode;        // IDLE | AUTO | MANUAL
+    private String state;       // trạng thái AUTO: STOPPED | FORWARD | BRAKE | BACKUP | TURN | ESCAPE
+    private String manualCmd;   // lệnh tay hiện tại (MANUAL): STOP | FORWARD | BACKWARD | LEFT | RIGHT
+    private float distLeft;
+    private float distCenter;
+    private float distRight;
+    private boolean cliff;       // cảnh báo nguy cơ rơi
+    private long timestamp;      // millis từ robot
 }

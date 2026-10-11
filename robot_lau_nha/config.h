@@ -130,5 +130,5 @@
 
 #define SERIAL_BAUD        115200
 #define DEBUG_INTERVAL_MS  500
-#define AUTO_START_ON_BOOT true    // true: tu chay AUTO sau khi bat nguon
+#define AUTO_START_ON_BOOT false   // false: bat nguon xong dung yen (IDLE), cho chon che do qua server
 #define AUTO_START_DELAY_MS 3000

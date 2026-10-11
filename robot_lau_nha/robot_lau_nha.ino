@@ -1,16 +1,20 @@
 // Robot hut bui / lau nha - ESP32 + L298N + 3x HC-SR04 + TCRT5000
 // Giai doan 2: tich hop WiFi + MQTT de dieu khien qua Backend
 //
+// Bat nguon xong robot o che do IDLE (dung yen), cho chon che do.
+//
 // Lenh qua Serial Monitor (115200, gui tung ky tu):
-//   g : bat dau che do AUTO (tu di, tranh vat can)
-//   x : dung
-//   w/s/a/d : dieu khien tay tien / lui / trai / phai
+//   g : chon che do AUTO (tu di, tranh vat can)
+//   m : chon che do MANUAL (dung yen, cho lenh w/s/a/d)
+//   x : ve IDLE, dung yen
+//   w/s/a/d : (chi trong MANUAL) tien / lui / trai / phai,  space : dung banh
 //   i : bat/tat in thong tin cam bien
 //
 // Lenh qua MQTT topic robot/command (JSON):
-//   {"command":"FORWARD"}   {"command":"BACKWARD"}
-//   {"command":"LEFT"}      {"command":"RIGHT"}
-//   {"command":"STOP"}      {"command":"AUTO"}
+//   Chon che do: {"command":"AUTO"}  {"command":"MANUAL"}  {"command":"IDLE"}
+//   Trong MANUAL: {"command":"FORWARD"} {"command":"BACKWARD"}
+//                 {"command":"LEFT"}    {"command":"RIGHT"}   {"command":"STOP"}
+//   STOP khi dang AUTO -> ve IDLE
 
 #include <esp_system.h>
 #include "config.h"
@@ -41,7 +45,9 @@ static void handleSerial() {
     char c = Serial.read();
     switch (c) {
       case 'g': case 'G': autoStartPending = false; rtcResumeCount = 0; navStartAuto(); break;
+      case 'm': case 'M': autoStartPending = false; navStartManual(); break;
       case 'x': case 'X': autoStartPending = false; navStop();      break;
+      case ' ':           navManual(MANUAL_STOP);     break;
       case 'w': case 'W': navManual(MANUAL_FORWARD);  break;
       case 's': case 'S': navManual(MANUAL_BACKWARD); break;
       case 'a': case 'A': navManual(MANUAL_LEFT);     break;
@@ -105,8 +111,9 @@ void setup() {
     Serial.println("[WARN] Khong co WiFi - tiep tuc che do offline (chi dieu khien qua Serial).");
   }
 
-  Serial.println("Lenh Serial: g=AUTO, x=dung, w/s/a/d=tay, i=debug");
-  Serial.println("Lenh MQTT:   {\"command\":\"FORWARD/BACKWARD/LEFT/RIGHT/STOP/AUTO\"}");
+  Serial.println("Robot dang IDLE (dung yen) - cho chon che do AUTO / MANUAL");
+  Serial.println("Lenh Serial: g=AUTO, m=MANUAL, x=IDLE, w/s/a/d/space=tay, i=debug");
+  Serial.println("Lenh MQTT:   {\"command\":\"AUTO/MANUAL/IDLE\"}, trong MANUAL: FORWARD/BACKWARD/LEFT/RIGHT/STOP");
 }
 
 void loop() {

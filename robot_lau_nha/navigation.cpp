@@ -202,6 +202,7 @@ void navUpdate() {
 
 void navStartAuto() {
   mode = MODE_AUTO;
+  manualCmd = MANUAL_STOP;
   cliffEvent = false;
   memset(obstacleTimes, 0, sizeof(obstacleTimes));
   setState(NAV_FORWARD);
@@ -216,17 +217,38 @@ void navStop() {
   Serial.println("[NAV] Dung");
 }
 
-void navManual(ManualCmd cmd) {
-  if (mode != MODE_MANUAL) {
-    mode = MODE_MANUAL;
-    setState(NAV_STOPPED);
-    Serial.println("[NAV] Che do MANUAL");
-  }
-  manualCmd = cmd;
+void navStartManual() {
+  mode = MODE_MANUAL;
+  manualCmd = MANUAL_STOP;
+  motorBrake();
+  setState(NAV_STOPPED);
+  Serial.println("[NAV] Che do MANUAL - dung yen, cho lenh dieu khien");
 }
 
-RobotMode navGetMode()  { return mode; }
-NavState  navGetState() { return state; }
+bool navManual(ManualCmd cmd) {
+  if (mode != MODE_MANUAL) {
+    Serial.printf("[NAV] Bo qua lenh %s: chua chon che do MANUAL (dang %s)\n",
+                  navManualName(cmd), navModeName(mode));
+    return false;
+  }
+  manualCmd = cmd;
+  return true;
+}
+
+RobotMode navGetMode()      { return mode; }
+NavState  navGetState()     { return state; }
+ManualCmd navGetManualCmd() { return manualCmd; }
+
+const char* navManualName(ManualCmd c) {
+  switch (c) {
+    case MANUAL_STOP:     return "STOP";
+    case MANUAL_FORWARD:  return "FORWARD";
+    case MANUAL_BACKWARD: return "BACKWARD";
+    case MANUAL_LEFT:     return "LEFT";
+    case MANUAL_RIGHT:    return "RIGHT";
+  }
+  return "?";
+}
 
 const char* navStateName(NavState s) {
   switch (s) {

@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 
 /**
  * Trạng thái robot nhận từ MQTT topic robot/status.
- * Robot publish JSON: {"mode":"MANUAL","state":"FORWARD","distL":30.5,"distC":50.0,"distR":28.1,"cliff":false}
+ * Robot publish JSON: {"mode":"MANUAL","state":"STOPPED","manualCmd":"FORWARD",
+ *                      "distLeft":30.5,"distCenter":50.0,"distRight":28.1,"cliff":false,"timestamp":12345}
  */
 @Data
 @Builder
@@ -15,7 +16,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RobotStatus {
     private String mode;        // IDLE | AUTO | MANUAL
-    private String state;       // STOPPED | FORWARD | BACKWARD | TURN | ...
+    private String state;       // trạng thái AUTO: STOPPED | FORWARD | BRAKE | BACKUP | TURN | ESCAPE
+    private String manualCmd;   // lệnh tay hiện tại (MANUAL): STOP | FORWARD | BACKWARD | LEFT | RIGHT
     private float distLeft;
     private float distCenter;
     private float distRight;

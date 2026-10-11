@@ -3,6 +3,7 @@
 #include "config.h"
 #include "navigation.h"
 #include "sensors.h"
+#include "wifi_manager.h"
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>   // Cài qua Library Manager: "PubSubClient" by Nick O'Leary
@@ -21,6 +22,7 @@
 static WiFiClient   wifiClient;
 static PubSubClient mqttClient(wifiClient);
 static uint32_t     lastStatusMs = 0;
+static bool         statusPending = false;   // publish ngay sau khi nhan lenh (bao lai cho server)
 
 // ============================================================
 //  Callback: nhận lệnh từ Backend qua topic robot/command
@@ -52,15 +54,32 @@ static void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
     Serial.printf("[MQTT] Lệnh nhận được: %s\n", cmdStr);
 
-    // Ánh xạ chuỗi → ManualCmd / action
-    if      (strcmp(cmdStr, "FORWARD")  == 0) navManual(MANUAL_FORWARD);
+    // Chọn chế độ
+    if      (strcmp(cmdStr, "AUTO")   == 0) navStartAuto();
+    else if (strcmp(cmdStr, "MANUAL") == 0) navStartManual();
+    else if (strcmp(cmdStr, "IDLE")   == 0) navStop();
+    // STOP: đang MANUAL -> dừng bánh nhưng vẫn ở MANUAL; chế độ khác -> về IDLE
+    else if (strcmp(cmdStr, "STOP")   == 0) {
+        if (navGetMode() == MODE_MANUAL) navManual(MANUAL_STOP);
+        else                             navStop();
+    }
+    // Điều khiển tay – chỉ có tác dụng khi đã chọn MANUAL
+    else if (strcmp(cmdStr, "FORWARD")  == 0) navManual(MANUAL_FORWARD);
     else if (strcmp(cmdStr, "BACKWARD") == 0) navManual(MANUAL_BACKWARD);
     else if (strcmp(cmdStr, "LEFT")     == 0) navManual(MANUAL_LEFT);
     else if (strcmp(cmdStr, "RIGHT")    == 0) navManual(MANUAL_RIGHT);
-    else if (strcmp(cmdStr, "STOP")     == 0) navStop();
-    else if (strcmp(cmdStr, "AUTO")     == 0) navStartAuto();
     else {
         Serial.printf("[MQTT] Lệnh không xác định: %s\n", cmdStr);
+    }
+
+    statusPending = true;
+}
+
+// Mất kết nối khi đang điều khiển tay -> dừng bánh (không nhận được lệnh STOP nữa)
+static void stopManualOnDisconnect() {
+    if (navGetMode() == MODE_MANUAL && navGetManualCmd() != MANUAL_STOP) {
+        navManual(MANUAL_STOP);
+        Serial.println("[MQTT] Mất kết nối khi đang điều khiển tay -> dừng");
     }
 }
 
@@ -101,9 +120,13 @@ void mqttInit() {
 }
 
 void mqttUpdate() {
-    if (!wifiConnected()) return;   // wifiConnected() từ wifi_manager.h
+    if (!wifiConnected()) {
+        stopManualOnDisconnect();
+        return;
+    }
 
     if (!mqttClient.connected()) {
+        stopManualOnDisconnect();
         static uint32_t lastReconnectMs = 0;
         uint32_t now = millis();
         if (now - lastReconnectMs >= 5000) {   // thử lại mỗi 5 giây
@@ -120,20 +143,22 @@ void mqttPublishStatus() {
     if (!mqttClient.connected()) return;
 
     uint32_t now = millis();
-    if (now - lastStatusMs < MQTT_STATUS_INTERVAL_MS) return;
+    if (!statusPending && now - lastStatusMs < MQTT_STATUS_INTERVAL_MS) return;
     lastStatusMs = now;
+    statusPending = false;
 
     const Distances& d = sensorsGet();
     const CliffState& c = sensorsCliff();
-    const char* modeName  = navModeName(navGetMode());
-    const char* stateName = navStateName(navGetState());
+    const char* modeName   = navModeName(navGetMode());
+    const char* stateName  = navStateName(navGetState());
+    const char* manualName = navManualName(navGetManualCmd());
 
     char payload[256];
     snprintf(payload, sizeof(payload),
-        "{\"mode\":\"%s\",\"state\":\"%s\","
+        "{\"mode\":\"%s\",\"state\":\"%s\",\"manualCmd\":\"%s\","
         "\"distLeft\":%.1f,\"distCenter\":%.1f,\"distRight\":%.1f,"
         "\"cliff\":%s,\"timestamp\":%lu}",
-        modeName, stateName,
+        modeName, stateName, manualName,
         d.left, d.center, d.right,
         c.detected ? "true" : "false",
         (unsigned long)now

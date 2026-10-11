@@ -38,8 +38,9 @@ public class RobotStatusService {
         try {
             RobotStatus status = objectMapper.readValue(payload, RobotStatus.class);
             latestStatus.set(status);
-            log.info("[MQTT] Robot status updated → mode={}, state={}, distC={:.1f}cm, cliff={}",
-                    status.getMode(), status.getState(), status.getDistCenter(), status.isCliff());
+            log.info("[MQTT] Robot status updated → mode={}, state={}, manualCmd={}, distC={}cm, cliff={}",
+                    status.getMode(), status.getState(), status.getManualCmd(),
+                    status.getDistCenter(), status.isCliff());
 
         } catch (Exception e) {
             log.warn("[MQTT] Cannot parse robot status: {}", payload, e);
