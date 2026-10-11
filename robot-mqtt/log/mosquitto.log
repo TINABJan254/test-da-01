@@ -1,0 +1,9 @@
+1791684993: mosquitto version 2.1.2 starting
+1791684993: Config loaded from /mosquitto/config/mosquitto.conf.
+1791684993: Bridge support available.
+1791684993: Persistence support available.
+1791684993: TLS support available.
+1791684993: TLS-PSK support available.
+1791684993: Websockets support available.
+1791684993: Opening ipv4 listen socket on port 1883.
+1791684993: mosquitto version 2.1.2 running

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: robot-backend
+
+server:
+  port: 8080
+
+robot:
+  mqtt:
+    broker-url: tcp://localhost:1883
+    client-id: robot-backend-001
+    topic:
+      command: robot/command      # Backend publish → Robot subscribe
+      status: robot/status        # Robot publish → Backend subscribe
+    qos: 1
+    username: ""
+    password: ""
