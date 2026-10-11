@@ -20,9 +20,10 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
+	// Spring Boot 4: auto-config cua Spring Integration (@ServiceActivator...) nam trong starter rieng
+	implementation("org.springframework.boot:spring-boot-starter-integration")
 	implementation("org.springframework.integration:spring-integration-mqtt")
 	implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
-	implementation("com.fasterxml.jackson.core:jackson-databind")
 	compileOnly("org.projectlombok:lombok")
 	annotationProcessor("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")

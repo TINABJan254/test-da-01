@@ -1,7 +1,7 @@
 package com.datn.robotbackend.service;
 
 import com.datn.robotbackend.model.RobotStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,7 @@ import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,8 +38,15 @@ public class RobotStatusService {
 
         try {
             RobotStatus status = objectMapper.readValue(payload, RobotStatus.class);
-            latestStatus.set(status);
-            log.info("[MQTT] Robot status updated → mode={}, state={}, manualCmd={}, distC={}cm, cliff={}",
+            RobotStatus prev = latestStatus.getAndSet(status);
+
+            // Robot gửi status mỗi 500ms -> chỉ log khi chế độ/trạng thái thay đổi
+            boolean changed = prev == null
+                    || !Objects.equals(prev.getMode(), status.getMode())
+                    || !Objects.equals(prev.getState(), status.getState())
+                    || !Objects.equals(prev.getManualCmd(), status.getManualCmd())
+                    || prev.isCliff() != status.isCliff();
+            if (changed) log.info("[MQTT] Robot status updated → mode={}, state={}, manualCmd={}, distC={}cm, cliff={}",
                     status.getMode(), status.getState(), status.getManualCmd(),
                     status.getDistCenter(), status.isCliff());
 

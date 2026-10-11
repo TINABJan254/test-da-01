@@ -2,7 +2,7 @@ package com.datn.robotbackend.service;
 
 import com.datn.robotbackend.config.MqttProperties;
 import com.datn.robotbackend.model.RobotCommand;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.integration.support.MessageBuilder;
