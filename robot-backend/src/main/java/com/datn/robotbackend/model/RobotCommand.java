@@ -1,26 +1,42 @@
 package com.datn.robotbackend.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Trạng thái robot nhận từ MQTT topic robot/status.
- * Robot publish JSON: {"mode":"MANUAL","state":"STOPPED","manualCmd":"FORWARD",
- *                      "distLeft":30.5,"distCenter":50.0,"distRight":28.1,"cliff":false,"timestamp":12345}
+ * Các lệnh điều khiển robot – phải khớp với onMqttMessage() trong robot_lau_nha (ESP32).
+ * MQTT payload ví dụ: {"command":"FORWARD"}
+ *
+ * Robot khởi động ở IDLE (đứng yên). Chọn chế độ bằng AUTO / MANUAL / IDLE.
+ * FORWARD/BACKWARD/LEFT/RIGHT chỉ có tác dụng khi robot đang ở MANUAL.
+ * STOP: đang MANUAL → dừng bánh (vẫn ở MANUAL); đang AUTO → về IDLE.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class RobotStatus {
-    private String mode;        // IDLE | AUTO | MANUAL
-    private String state;       // trạng thái AUTO: STOPPED | FORWARD | BRAKE | BACKUP | TURN | ESCAPE
-    private String manualCmd;   // lệnh tay hiện tại (MANUAL): STOP | FORWARD | BACKWARD | LEFT | RIGHT
-    private float distLeft;
-    private float distCenter;
-    private float distRight;
-    private boolean cliff;       // cảnh báo nguy cơ rơi
-    private long timestamp;      // millis từ robot
+public enum RobotCommand {
+    // --- Chọn chế độ ---
+    AUTO,       // Chế độ tự động
+    MANUAL,     // Chế độ điều khiển tay (đứng yên chờ lệnh)
+    IDLE,       // Đứng yên
+
+    // --- Điều khiển tay (chỉ trong MANUAL) ---
+    FORWARD,    // Tiến
+    BACKWARD,   // Lùi
+    LEFT,       // Quay trái
+    RIGHT,      // Quay phải
+    STOP,       // Dừng
+    ;
+
+    /** Lệnh di chuyển – yêu cầu robot đang ở chế độ MANUAL. */
+    public boolean isMovement() {
+        return this == FORWARD || this == BACKWARD || this == LEFT || this == RIGHT;
+    }
+
+    @JsonValue
+    public String toJson() {
+        return this.name();
+    }
+
+    @JsonCreator
+    public static RobotCommand fromJson(String value) {
+        return RobotCommand.valueOf(value.toUpperCase());
+    }
 }
